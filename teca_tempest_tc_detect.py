@@ -313,7 +313,10 @@ class StitchNodes:
 
         # Check if the output table is empty
         if table_out.get_number_of_rows() == 0:
-            return torch.empty(0), out_coords
+            out = torch.full((1, 1, 12), float('nan'))
+            out_coords["path_id"] = np.arange(1)
+            out_coords["step"] = np.arange(1)
+            return out, out_coords
 
         def get_column_index(table, name):
             if not table.has_column(name):
@@ -327,7 +330,10 @@ class StitchNodes:
         col_storm_id = get_column_index(table_out, "storm_id")
 
         if col_step == -1 or col_storm_id == -1:
-            return torch.empty(0), out_coords
+            out = torch.full((1, 1, 12), float('nan'))
+            out_coords["path_id"] = np.arange(1)
+            out_coords["step"] = np.arange(1)
+            return out, out_coords
 
         # Begin: Prepare the data to match the output format of existing Earth2Studio TC trackers
         #
