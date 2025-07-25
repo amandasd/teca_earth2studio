@@ -1,7 +1,6 @@
 from collections import OrderedDict
 
 from earth2studio.models.batch import batch_coords, batch_func
-from earth2studio.utils import handshake_coords, handshake_dim
 from earth2studio.utils.type import CoordSystem
 
 import numpy
@@ -148,7 +147,7 @@ class DetectNodes(torch.nn.Module):
         if not use_gpu:
             md["device_id"] = -1
 
-        # TECA pipeline starts
+        # Begin: TECA pipeline
         #
         # Create a teca_dataset_source from the mesh and metadata,
         # which will serve as input data to teca_detect_nodes
@@ -174,7 +173,7 @@ class DetectNodes(torch.nn.Module):
         table = teca_table.New()
         table.shallow_copy(output_table.get_dataset())
         #
-        # TECA pipeline ends
+        # End: TECA pipeline
 
         if self.path_buffer.numel() != 0:
             self.step += 1
@@ -289,7 +288,7 @@ class StitchNodes:
                 teca_array[i] = v
             table_in.append_column(col, teca_array)
 
-        # TECA pipeline starts
+        # Begin: TECA pipeline
         #
         # Create a teca_dataset_source from teca table,
         # which will serve as input data to teca_stitch_nodes
@@ -310,7 +309,7 @@ class StitchNodes:
         table_out = teca_table.New()
         table_out.shallow_copy(output_table.get_dataset())
         #
-        # TECA pipeline ends
+        # End: TECA pipeline
 
         # Check if the output table is empty
         if table_out.get_number_of_rows() == 0:
@@ -330,6 +329,8 @@ class StitchNodes:
         if col_step == -1 or col_storm_id == -1:
             return torch.empty(0), out_coords
 
+        # Begin: Prepare the data to match the output format of existing Earth2Studio TC trackers
+        #
         # Convert teca output table to a numpy array
         arrays = []
         columns = ["storm_id", "path_length", "year", "month", "day", "hour", "step", "i", "j", "lat", "lon", "msl", "w10m", "zs"]
@@ -372,6 +373,8 @@ class StitchNodes:
         # Select only the desired columns
         # and add a "batch" dimension
         out = output[:, :, keep_cols].unsqueeze(0)
+        #
+        # End: Prepare the data to match the output format of existing Earth2Studio TC trackers
 
         # Update out_coords with path_id and step identifiers
         out_coords["path_id"] = np.arange(num_paths)
