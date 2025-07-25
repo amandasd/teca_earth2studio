@@ -8,8 +8,7 @@ import torch
 from datetime import datetime, timedelta
 from earth2studio.data import ARCO
 from earth2studio.models.dx import teca_tempest_tc_detect
-from earth2studio.utils.time import to_time_array
-from earth2studio.data import fetch_data, prep_data_array
+from earth2studio.data import prep_data_array
 
 # Create the data source
 data = ARCO()
@@ -18,6 +17,7 @@ data = ARCO()
 tracker = teca_tempest_tc_detect()
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 tracker = tracker.to(device)
+tracker.detect._device = device
 
 start_time = datetime(2009, 8, 5)  # Start date
 nsteps = 10  # Number of steps to run the tracker for into future
@@ -27,8 +27,7 @@ for step, time in enumerate(times):
     da = data(time, tracker.detect.input_coords()["variable"])
     x, coords = prep_data_array(da, device=device)
     current_time = coords.get("time")
-    tracker.detect._current_time = current_time
-    tracker.detect._device = device
+    tracker.detect._current_time = current_time    
     output, output_coords = tracker.detect(x, coords)
     
 tracker.stitch._nsteps = nsteps
