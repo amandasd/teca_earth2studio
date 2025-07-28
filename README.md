@@ -28,7 +28,7 @@ times = [start_time + timedelta(hours=6 * i) for i in range(nsteps)]
 for step, time in enumerate(times):
     da = data(time, tracker.detect.input_coords()["variable"])
     x, coords = prep_data_array(da, device=device)
-    current_time = coords.get("time")
+    tracker.detect._current_time = np.array([np.datetime64(times[step], 'ns')])
     tracker.detect._current_time = current_time    
     output, output_coords = tracker.detect(x, coords)
     
