@@ -1,6 +1,7 @@
 from collections import OrderedDict
 
 from earth2studio.models.batch import batch_coords, batch_func
+from earth2studio.utils import handshake_coords, handshake_dim
 from earth2studio.utils.type import CoordSystem
 
 import numpy
@@ -31,10 +32,11 @@ class DetectNodes(torch.nn.Module):
         CoordSystem
             Coordinate system dictionary
         """
+
         return OrderedDict(
             {
                 "batch": np.empty(0),
-                "variable": np.array(["msl", "u10m", "v10m", "z", "z300", "z500"]),
+                "variable": np.array(["msl", "u10m", "v10m", "z1000", "z300", "z500"]),
                 "lat": np.linspace(90, -90, 721, endpoint=True),
                 "lon": np.linspace(0, 360, 1440, endpoint=False),
             }
@@ -55,14 +57,23 @@ class DetectNodes(torch.nn.Module):
             Coordinate system dictionary
         """
 
+        target_input_coords = self.input_coords()
+        handshake_dim(input_coords, "lon", 3)
+        handshake_dim(input_coords, "lat", 2)
+        handshake_dim(input_coords, "variable", 1)
+        handshake_coords(input_coords, target_input_coords, "lon")
+        handshake_coords(input_coords, target_input_coords, "lat")
+        handshake_coords(input_coords, target_input_coords, "variable")
+
         # [batch, candidate_id, variable]
-        return OrderedDict(
+        output_coords = OrderedDict(
             [
                 ("batch", input_coords["batch"]),
                 ("candidate_id", np.empty(0)),
                 ("variable", np.array(["step", "year", "month", "day", "hour", "minute", "ncandidates", "i", "j", "lat", "lon", "msl", "w10m", "zs"])),
             ]
         )
+        return output_coords
 
     @batch_func()
     def __call__(
@@ -79,7 +90,6 @@ class DetectNodes(torch.nn.Module):
         coords : CoordSystem
             Input coordinate system
         """
-        out_coords = self.output_coords(coords)
 
         # get the device to run on
         np = numpy
@@ -89,7 +99,7 @@ class DetectNodes(torch.nn.Module):
             use_gpu = True
 
         def get_variable(x: torch.Tensor, var: str) -> torch.Tensor:
-            index = ["msl", "u10m", "v10m", "z", "z300", "z500", ].index(var)
+            index = ["msl", "u10m", "v10m", "z1000", "z300", "z500", ].index(var)
             return x[:, index]
 
         # Calculate wind speed
@@ -103,15 +113,16 @@ class DetectNodes(torch.nn.Module):
         thickness = z300 - z500
 
         msl = get_variable(x, "msl")
-        zs = get_variable(x, "z")
+        zs = get_variable(x, "z1000")
         new_x = torch.stack([msl, w10m, thickness, zs], dim=1)
-        coords["variable"] = numpy.array(["msl", "w10m", "thickness", "zs"])
 
         batch, nvars, ny, nx = new_x.shape
         assert batch == 1, "Only batch size 1 is supported in this example"
 
-        lon = teca_variant_array.New(coords["lon"])
-        lat = teca_variant_array.New(coords["lat"])
+        t_lon = torch.as_tensor(self.input_coords()["lon"], device=x.device)
+        t_lat = torch.as_tensor(self.input_coords()["lat"], device=x.device)
+        lon = teca_variant_array.New(t_lon)
+        lat = teca_variant_array.New(t_lat)
 
         # Create and configure a teca mesh
         mesh = teca_cartesian_mesh.New()
@@ -122,7 +133,7 @@ class DetectNodes(torch.nn.Module):
 
         # Convert a pytorch tensor to either a cupy or numpy array,
         # depending on which device
-        for i, var in enumerate(coords["variable"]):
+        for i, var in enumerate(["msl", "w10m", "thickness", "zs"]):
             arr = new_x[0, i].detach().to(torch.float32)
             if use_gpu:
                 arr_np = cupy.asarray(arr)
@@ -201,6 +212,7 @@ class DetectNodes(torch.nn.Module):
         else:
             self.path_buffer = torch.cat((self.path_buffer, out.detach()), dim=1)
 
+        out_coords = self.output_coords(coords)
         out_coords["candidate_id"] = np.arange(self.path_buffer.shape[1])
 
         return self.path_buffer, out_coords
@@ -266,8 +278,6 @@ class StitchNodes:
         coords : CoordSystem
             Input coordinate system
         """
-        out_coords = self.output_coords(coords)
-
         np = numpy
 
         # Convert a pytorch tensor to a numpy array, then to a pandas dataframe
@@ -310,6 +320,8 @@ class StitchNodes:
         table_out.shallow_copy(output_table.get_dataset())
         #
         # End: TECA pipeline
+
+        out_coords = self.output_coords(coords)
 
         # Check if the output table is empty
         if table_out.get_number_of_rows() == 0:
