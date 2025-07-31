@@ -146,8 +146,9 @@ sg = SphericalGaussian(noise_amplitude=0.15)
 
 io = ZarrBackend()
 
-io_model = ensemble(["2009-08-05"], 10, 4, model, data, io, sg,
-                    batch_size=1,
+nensemble = 4
+io_model = ensemble(["2009-08-05"], nsteps, nensemble, model, data, io, sg,
+                    batch_size=2,
                     output_coords={"variable": np.array(["msl", "u10m", "v10m", "z300", "z500"])},)
 
 msl  = io_model["msl"][:]
@@ -172,7 +173,7 @@ z_tensor = x_data.expand(4, 1, 11, 721, 1440)  # shape: [4, 1, 11, 721, 1440]
 x_combined = torch.stack([msl_tensor, u10m_tensor, v10m_tensor, z_tensor, z300_tensor, z500_tensor], dim=3)
 
 member_outputs = []
-member_output_coords = []
+member_outputs_coords = []
 tracker.stitch._nsteps = nsteps+1
 for ens in range(x_combined.shape[0]):  # loop over ensemble dimension
     tracker.detect.reset_path_buffer()
@@ -188,4 +189,4 @@ for ens in range(x_combined.shape[0]):  # loop over ensemble dimension
         output, output_coords = tracker.detect(x_combined[ens,:,step,:,:,:], coords)
     out, out_coords = tracker.stitch(output, output_coords)
     member_outputs.append(out)
-    member_output_coords.append(out_coords)
+    member_outputs_coords.append(out_coords)
