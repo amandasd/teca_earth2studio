@@ -392,7 +392,7 @@ class StitchNodes:
 
         # Update out_coords with path_id and step identifiers
         out_coords = self.output_coords(coords)
-        out_coords["path_id"] = np.arange(num_paths)
+        out_coords["path_id"] = np.arange(out.shape[1])
         out_coords["step"] = np.arange(self._nsteps)
 
         return out, out_coords
