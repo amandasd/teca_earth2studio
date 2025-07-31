@@ -6,6 +6,7 @@ These examples show how to run the TC tracker, originally ported from **TempestE
 
 ```python
 import torch
+import numpy as np
 from datetime import datetime, timedelta
 from earth2studio.data import ARCO
 from earth2studio.models.dx import teca_tempest_tc_detect
@@ -41,6 +42,7 @@ out, out_coords = tracker.stitch(output, output_coords)
 
 ```python
 import torch
+import numpy as np
 from datetime import datetime, timedelta
 from earth2studio.data import ARCO
 from earth2studio.models.dx import teca_tempest_tc_detect
@@ -49,7 +51,6 @@ from earth2studio.data import fetch_data, prep_data_array
 from earth2studio.utils.time import to_time_array
 from earth2studio.utils.coords import map_coords, CoordSystem
 from tqdm import tqdm
-import numpy as np
 
 # Create the data source
 data = ARCO()
@@ -114,6 +115,7 @@ out, out_coords = tracker.stitch(output, output_coords)
 
 ```python
 import torch
+import numpy as np
 from datetime import datetime, timedelta
 from earth2studio.data import ARCO
 from earth2studio.models.dx import teca_tempest_tc_detect
@@ -123,7 +125,6 @@ from earth2studio.perturbation import SphericalGaussian
 from earth2studio.run import ensemble
 from earth2studio.data import prep_data_array
 from earth2studio.utils.coords import CoordSystem
-import numpy as np
 
 # Create the data source
 data = ARCO()
