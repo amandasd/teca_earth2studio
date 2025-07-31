@@ -187,9 +187,3 @@ for ens in range(x_combined.shape[0]):  # loop over ensemble dimension
     out, out_coords = tracker.stitch(output, output_coords)
     member_outputs.append(out)
     member_output_coords.append(out_coords)
-
-
-
-
-
-
