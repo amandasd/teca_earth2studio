@@ -14,9 +14,10 @@ from earth2studio.data import prep_data_array
 # Create the data source
 data = ARCO()
 
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
 # Create tropical cyclone tracker
 tracker = teca_tempest_tc_detect()
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 tracker = tracker.to(device)
 tracker.detect._device = device
 tracker.detect.reset_path_buffer()
@@ -53,9 +54,10 @@ import numpy as np
 # Create the data source
 data = ARCO()
 
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
 # Create tropical cyclone tracker
 tracker = teca_tempest_tc_detect()
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 tracker = tracker.to(device)
 tracker.detect._device = device
 tracker.detect.reset_path_buffer()
@@ -126,9 +128,10 @@ import numpy as np
 # Create the data source
 data = ARCO()
 
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
 # Create tropical cyclone tracker
 tracker = teca_tempest_tc_detect()
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 tracker = tracker.to(device)
 tracker.detect._device = device
 
