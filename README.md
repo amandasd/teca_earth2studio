@@ -72,8 +72,8 @@ prognostic = prognostic.to(device)
 start_time_1 = datetime(2023, 8, 5)  # Start date for inference
 start_time_2 = datetime(2023, 1, 1)  # Start date for inference
 nsteps = 10  # Number of steps to run the tracker for into future
-times_1 = [start_time_1 + timedelta(hours=6 * i) for i in range(nsteps)]
-times_2 = [start_time_2 + timedelta(hours=6 * i) for i in range(nsteps)]
+times_1 = [start_time_1 + timedelta(hours=6 * i) for i in range(nsteps+1)]
+times_2 = [start_time_2 + timedelta(hours=6 * i) for i in range(nsteps+1)]
 da = data([start_time_1, start_time_2], ['z'])
 x_data, coords_data = prep_data_array(da, device=device)
 
