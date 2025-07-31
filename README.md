@@ -105,7 +105,6 @@ with tqdm(total=nsteps, desc="Running inference") as pbar:
         x, coords = map_coords(x, coords, tracker.detect.input_coords())
         tracker.detect._current_time = np.array([np.datetime64(times_1[step], 'ns'), np.datetime64(times_2[step], 'ns')])
         output, output_coords = tracker.detect(x, coords)
-        print(f"Step {step}: SFNO tracks output shape {output.shape}")
         pbar.update(1)
         if step == nsteps:
             break
