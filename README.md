@@ -38,7 +38,7 @@ tracker.stitch._nsteps = nsteps+1
 out, out_coords = tracker.stitch(output, output_coords)
 ```
 
-## From SFNO model
+## From SFNO model and 2 initial conditions
 
 ```python
 import torch
@@ -69,16 +69,18 @@ package = SFNO.load_default_package()
 prognostic = SFNO.load_model(package)
 prognostic = prognostic.to(device)
 
-start_time = datetime(2009, 8, 5)  # Start date for inference
+start_time_1 = datetime(2023, 8, 5)  # Start date for inference
+start_time_2 = datetime(2023, 1, 1)  # Start date for inference
 nsteps = 10  # Number of steps to run the tracker for into future
-times = [start_time + timedelta(hours=6 * i) for i in range(nsteps+1)]
-da = data(start_time, ['z'])
+times_1 = [start_time_1 + timedelta(hours=6 * i) for i in range(nsteps)]
+times_2 = [start_time_2 + timedelta(hours=6 * i) for i in range(nsteps)]
+da = data([start_time_1, start_time_2], ['z'])
 x_data, coords_data = prep_data_array(da, device=device)
 
 # Load the initial state
 x, coords = fetch_data(
     source=data,
-    time=to_time_array([start_time]),
+    time=to_time_array([start_time_1, start_time_2]),
     variable=prognostic.input_coords()["variable"],
     lead_time=prognostic.input_coords()["lead_time"],
     device=device,
@@ -94,15 +96,16 @@ with tqdm(total=nsteps, desc="Running inference") as pbar:
         x = torch.cat((x_data, x_sfno_squeezed), dim=1)
         variables = np.concatenate([coords_data["variable"], coords_sfno["variable"]])
         coords = CoordSystem({
-             "time": np.array([np.datetime64(times[step], 'ns')]),
+             "time": np.array([np.datetime64(times_1[step], 'ns'), np.datetime64(times_2[step], 'ns')]),
              "variable": variables,
              "lat": coords_data["lat"],
              "lon": coords_data["lon"],
         })
         # Run tracker
         x, coords = map_coords(x, coords, tracker.detect.input_coords())
-        tracker.detect._current_time = np.array([np.datetime64(times[step], 'ns')])
+        tracker.detect._current_time = np.array([np.datetime64(times_1[step], 'ns'), np.datetime64(times_2[step], 'ns')])
         output, output_coords = tracker.detect(x, coords)
+        print(f"Step {step}: SFNO tracks output shape {output.shape}")
         pbar.update(1)
         if step == nsteps:
             break
