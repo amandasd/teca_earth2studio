@@ -162,6 +162,7 @@ z300 = io_model["z300"][:]
 z500 = io_model["z500"][:]
 
 # shape: (ensemble, time, nsteps, lat, lon)
+# shape: [4, 1, 11, 721, 1440]
 msl_tensor  = torch.tensor(msl, dtype=torch.float32, device=device)
 u10m_tensor = torch.tensor(u10m, dtype=torch.float32, device=device)
 v10m_tensor = torch.tensor(v10m, dtype=torch.float32, device=device)
@@ -174,6 +175,7 @@ x_data = x_data.unsqueeze(2)  # shape: [1, 1, 1, 721, 1440]
 z_tensor = x_data.expand(4, 1, 11, 721, 1440)  # shape: [4, 1, 11, 721, 1440]
 
 # Stack along new variable dimension (dim=3)
+# shape: [4, 1, 11, 6, 721, 1440]
 x_combined = torch.stack([msl_tensor, u10m_tensor, v10m_tensor, z_tensor, z300_tensor, z500_tensor], dim=3)
 
 member_outputs = []
