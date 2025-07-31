@@ -146,7 +146,9 @@ sg = SphericalGaussian(noise_amplitude=0.15)
 
 io = ZarrBackend()
 
-io_model = ensemble(["2009-08-05"], 10, 4, model, data, io, sg, batch_size=1, output_coords={"variable": np.array(["msl", "u10m", "v10m", "z300", "z500"])},)
+io_model = ensemble(["2009-08-05"], 10, 4, model, data, io, sg,
+                    batch_size=1,
+                    output_coords={"variable": np.array(["msl", "u10m", "v10m", "z300", "z500"])},)
 
 msl  = io_model["msl"][:]
 u10m = io_model["u10m"][:]
