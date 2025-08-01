@@ -155,7 +155,8 @@ io = ZarrBackend()
 nensemble = 4
 io_model = ensemble(["2009-08-05"], nsteps, nensemble, model, data, io, sg,
                     batch_size=2,
-                    output_coords={"variable": np.array(["msl", "u10m", "v10m", "z300", "z500"])},)
+                    output_coords={"variable": np.array(["msl", "u10m", "v10m", "z300", "z500"])},
+                    device=device)
 
 msl  = io_model["msl"][:]
 u10m = io_model["u10m"][:]
