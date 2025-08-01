@@ -2,7 +2,7 @@
 
 These examples show how to run the TC tracker, originally ported from **TempestExtremes**, by integrating **TECA** into a typical **Earth2Studio** workflow.
 
-## From ARCO data source
+## ARCO data source
 
 ```python
 import torch
@@ -38,7 +38,7 @@ tracker.stitch._nsteps = nsteps+1
 out, out_coords = tracker.stitch(output, output_coords)
 ```
 
-## From SFNO model and 2 initial conditions
+## SFNO model and 2 initial conditions
 
 ```python
 import torch
@@ -113,7 +113,7 @@ tracker.stitch._nsteps = nsteps+1
 out, out_coords = tracker.stitch(output, output_coords)
 ```
 
-## From SFNO Ensemble
+## Ensemble
 
 ```python
 import torch
