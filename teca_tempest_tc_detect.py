@@ -200,24 +200,25 @@ class DetectNodes(torch.nn.Module):
             columns = ["year", "month", "day", "hour", "minute", "step", "ncandidates", "i", "j", "lat", "lon", "msl", "w10m", "zs"]
             for original_name in columns:
                 if "step" in original_name:
-                   arr = np.array(table.get_column(original_name)) + self.step
+                   arr = numpy.array(table.get_column(original_name)) + self.step
                 else:
-                   arr = np.array(table.get_column(original_name))
+                   arr = numpy.array(table.get_column(original_name))
                 arrays.append(arr)
-            data = np.stack(arrays, axis=1)
+            data = numpy.stack(arrays, axis=1)
 
             # Convert a cupy or numpy array to a pytorch tensor
-            tensor = torch.tensor(data)
+            tensor = torch.tensor(data, device="cpu")
             outs.append(tensor)
 
+        np = numpy
         # https://pytorch.org/docs/stable/generated/torch.nn.utils.rnn.pad_sequence.html
-        out = torch.nn.utils.rnn.pad_sequence(outs, padding_value=np.nan, batch_first=True)
+        out = torch.nn.utils.rnn.pad_sequence(outs, padding_value=np.nan, batch_first=True).to("cpu")
 
         # Accumulate detected candidates over timesteps into path_buffer
         if self.path_buffer.numel() == 0:
-            self.path_buffer = out.detach().clone()
+            self.path_buffer = out.detach().clone().to("cpu")
         else:
-            self.path_buffer = torch.cat((self.path_buffer, out.detach()), dim=1)
+            self.path_buffer = torch.cat((self.path_buffer, out.detach().to("cpu")), dim=1)
 
         out_coords = self.output_coords(coords)
         out_coords["candidate_id"] = np.arange(self.path_buffer.shape[1])
