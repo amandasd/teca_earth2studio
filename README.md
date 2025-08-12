@@ -133,31 +133,24 @@ data = ARCO()
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-# Create tropical cyclone tracker
-tracker = teca_tempest_tc_detect()
-tracker = tracker.to(device)
-tracker.detect._device = device
-
 # Load the default model package which downloads the check point from NGC
 package = SFNO.load_default_package()
 model = SFNO.load_model(package)
 model = model.to(device)
-
-start_time = datetime(2009, 8, 5)  # Start date for inference
-nsteps = 10  # Number of steps to run the tracker for into future
-times = [start_time + timedelta(hours=6 * i) for i in range(nsteps+1)]
 
 # Instantiate the pertubation method
 sg = SphericalGaussian(noise_amplitude=0.15)
 
 io = ZarrBackend()
 
+nsteps = 10
 nensemble = 4
 io_model = ensemble(["2009-08-05"], nsteps, nensemble, model, data, io, sg,
                     batch_size=2,
                     output_coords={"variable": np.array(["msl", "u10m", "v10m", "z300", "z500"])},
                     device=device)
 
+# the model data is on CPU after running
 msl  = io_model["msl"][:]
 u10m = io_model["u10m"][:]
 v10m = io_model["v10m"][:]
@@ -166,12 +159,16 @@ z500 = io_model["z500"][:]
 
 # shape: (ensemble, time, nsteps, lat, lon)
 # shape: [4, 1, 11, 721, 1440]
-msl_tensor  = torch.tensor(msl, dtype=torch.float32, device=device)
-u10m_tensor = torch.tensor(u10m, dtype=torch.float32, device=device)
-v10m_tensor = torch.tensor(v10m, dtype=torch.float32, device=device)
-z300_tensor = torch.tensor(z300, dtype=torch.float32, device=device)
-z500_tensor = torch.tensor(z500, dtype=torch.float32, device=device)
+msl_tensor  = torch.tensor(msl,  dtype=torch.float32)
+u10m_tensor = torch.tensor(u10m, dtype=torch.float32)
+v10m_tensor = torch.tensor(v10m, dtype=torch.float32)
+z300_tensor = torch.tensor(z300, dtype=torch.float32)
+z500_tensor = torch.tensor(z500, dtype=torch.float32)
 
+device = torch.device("cpu")
+
+start_time = datetime(2009, 8, 5)  # Start date for inference
+times = [start_time + timedelta(hours=6 * i) for i in range(nsteps+1)]
 da = data(start_time, ['z'])
 x_data, coords_data = prep_data_array(da, device=device) # shape: [1, 1, 721, 1440]
 x_data = x_data.unsqueeze(2)  # shape: [1, 1, 1, 721, 1440]
@@ -180,6 +177,11 @@ z_tensor = x_data.expand(4, 1, 11, 721, 1440)  # shape: [4, 1, 11, 721, 1440]
 # Stack along new variable dimension (dim=3)
 # shape: [4, 1, 11, 6, 721, 1440]
 x_combined = torch.stack([msl_tensor, u10m_tensor, v10m_tensor, z_tensor, z300_tensor, z500_tensor], dim=3)
+
+# Create tropical cyclone tracker
+tracker = teca_tempest_tc_detect()
+tracker = tracker.to(device)
+tracker.detect._device = device
 
 member_outputs = []
 member_outputs_coords = []
