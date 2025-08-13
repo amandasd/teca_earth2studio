@@ -261,7 +261,7 @@ times = [start_time + timedelta(hours=6 * i) for i in range(nsteps+1)]
 da = data(start_time, ['z'])
 x_data, coords_data = prep_data_array(da, device=device) # shape: [1, 1, 721, 1440]
 x_data = x_data.unsqueeze(2)  # shape: [1, 1, 1, 721, 1440]
-z_tensor = x_data.expand(nensemble, 1, 11, 721, 1440)  # shape: [nensemble, time, nsteps+1, lat, lon]
+z_tensor = x_data.expand(nensemble, 1, nsteps+1, 721, 1440)  # shape: [nensemble, time, nsteps+1, lat, lon]
 
 # Stack along new variable dimension (dim=3)
 # shape: (nensemble, time, nsteps+1, nvariables, lat, lon)
