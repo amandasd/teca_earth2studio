@@ -113,7 +113,7 @@ tracker.stitch._nsteps = nsteps+1
 out, out_coords = tracker.stitch(output, output_coords)
 ```
 
-## Ensemble
+## SFNO Ensemble
 
 ```python
 import torch
@@ -157,7 +157,7 @@ v10m = io_model["v10m"][:]
 z300 = io_model["z300"][:]
 z500 = io_model["z500"][:]
 
-# shape: (ensemble, time, nsteps, lat, lon)
+# shape: (nensemble, time, nsteps+1, lat, lon)
 # shape: [4, 1, 11, 721, 1440]
 msl_tensor  = torch.tensor(msl,  dtype=torch.float32)
 u10m_tensor = torch.tensor(u10m, dtype=torch.float32)
@@ -172,9 +172,99 @@ times = [start_time + timedelta(hours=6 * i) for i in range(nsteps+1)]
 da = data(start_time, ['z'])
 x_data, coords_data = prep_data_array(da, device=device) # shape: [1, 1, 721, 1440]
 x_data = x_data.unsqueeze(2)  # shape: [1, 1, 1, 721, 1440]
-z_tensor = x_data.expand(4, 1, 11, 721, 1440)  # shape: [4, 1, 11, 721, 1440]
+z_tensor = x_data.expand(nensemble, 1, nsteps+1, 721, 1440)  # shape: [nensemble, time, nsteps+1, lat, lon]
 
 # Stack along new variable dimension (dim=3)
+# shape: (nensemble, time, nsteps+1, nvariables, lat, lon)
+# shape: [4, 1, 11, 6, 721, 1440]
+x_combined = torch.stack([msl_tensor, u10m_tensor, v10m_tensor, z_tensor, z300_tensor, z500_tensor], dim=3)
+
+# Create tropical cyclone tracker
+tracker = teca_tempest_tc_detect()
+tracker = tracker.to(device)
+tracker.detect._device = device
+
+member_outputs = []
+member_outputs_coords = []
+tracker.stitch._nsteps = nsteps+1
+for ens in range(x_combined.shape[0]):  # loop over ensemble dimension
+    tracker.detect.reset_path_buffer()
+    tracker.detect.reset_step()
+    for step, time in enumerate(times):
+        coords = CoordSystem({
+                    "time": np.array([np.datetime64(time, 'ns')]),
+                    "variable": np.array(["msl", "u10m", "v10m", "z", "z300", "z500"]),
+                    "lat": np.linspace(90, -90, 721, endpoint=True),
+                    "lon": np.linspace(0, 360, 1440, endpoint=False),
+                })
+        tracker.detect._current_time = np.array([np.datetime64(time, 'ns')])
+        output, output_coords = tracker.detect(x_combined[ens,:,step,:,:,:], coords)
+    out, out_coords = tracker.stitch(output, output_coords)
+    member_outputs.append(out)
+    member_outputs_coords.append(out_coords)
+```
+
+## FCN3 Ensemble
+
+```python
+import torch
+import numpy as np
+from datetime import datetime, timedelta
+from earth2studio.data import ARCO
+from earth2studio.models.dx import teca_tempest_tc_detect
+from earth2studio.models.px import FCN3
+from earth2studio.io import ZarrBackend
+from earth2studio.perturbation import Zero
+from earth2studio.run import ensemble as run
+from earth2studio.data import prep_data_array
+from earth2studio.utils.coords import CoordSystem
+
+# Create the data source
+data = ARCO()
+
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+# Load the default model package
+model = FCN3.load_model(FCN3.load_default_package())
+model = model.to(device)
+
+# no perturbation required due to hidden Markov formulation of FCN3
+perturbation = Zero()
+
+io = ZarrBackend()
+
+nsteps = 10
+nensemble = 4
+# invoke inference with 4 ensemble members
+run(time=["2009-08-05"], nsteps=nsteps, nensemble=nensemble, prognostic=model, data=data, io=io, perturbation=perturbation,
+    batch_size=1, output_coords={"variable": np.array(["msl", "u10m", "v10m", "z300", "z500"])}, device=device,)
+
+# the model data is on CPU after running
+msl  = io["msl"][:]
+u10m = io["u10m"][:]
+v10m = io["v10m"][:]
+z300 = io["z300"][:]
+z500 = io["z500"][:]
+
+# shape: (nensemble, time, nsteps+1, lat, lon)
+# shape: [4, 1, 11, 721, 1440]
+msl_tensor  = torch.tensor(msl,  dtype=torch.float32)
+u10m_tensor = torch.tensor(u10m, dtype=torch.float32)
+v10m_tensor = torch.tensor(v10m, dtype=torch.float32)
+z300_tensor = torch.tensor(z300, dtype=torch.float32)
+z500_tensor = torch.tensor(z500, dtype=torch.float32)
+
+device = torch.device("cpu")
+
+start_time = datetime(2009, 8, 5)  # Start date for inference
+times = [start_time + timedelta(hours=6 * i) for i in range(nsteps+1)]
+da = data(start_time, ['z'])
+x_data, coords_data = prep_data_array(da, device=device) # shape: [1, 1, 721, 1440]
+x_data = x_data.unsqueeze(2)  # shape: [1, 1, 1, 721, 1440]
+z_tensor = x_data.expand(nensemble, 1, 11, 721, 1440)  # shape: [nensemble, time, nsteps+1, lat, lon]
+
+# Stack along new variable dimension (dim=3)
+# shape: (nensemble, time, nsteps+1, nvariables, lat, lon)
 # shape: [4, 1, 11, 6, 721, 1440]
 x_combined = torch.stack([msl_tensor, u10m_tensor, v10m_tensor, z_tensor, z300_tensor, z500_tensor], dim=3)
 
