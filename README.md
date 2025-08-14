@@ -204,7 +204,7 @@ for ens in range(x_combined.shape[0]):  # loop over ensemble dimension
     member_outputs_coords.append(out_coords)
 ```
 
-## FCN3 Ensemble
+## FCN3 Ensemble (NVIDIA A100 80GB and Earth2Studio v0.9.0a0)
 
 ```python
 import torch
