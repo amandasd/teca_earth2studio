@@ -196,7 +196,7 @@ class DetectNodes(torch.nn.Module):
             #
             # End: TECA pipeline
 
-            # Convert teca output table to either a cupy or numpy array
+            # Convert teca output table to a numpy array
             arrays = []
             columns = ["year", "month", "day", "hour", "minute", "step", "ncandidates", "i", "j", "lat", "lon", "msl", "w10m", "zs"]
             for original_name in columns:
@@ -207,8 +207,8 @@ class DetectNodes(torch.nn.Module):
                 arrays.append(arr)
             data = numpy.stack(arrays, axis=1)
 
-            # Convert a cupy or numpy array to a pytorch tensor
-            tensor = torch.tensor(data, device="cpu")
+            # Convert a numpy array to a pytorch tensor
+            tensor = torch.from_numpy(data).to(torch.device("cpu"))
             outs.append(tensor)
 
         np = numpy
@@ -354,7 +354,7 @@ class StitchNodes:
             data = np.stack(arrays, axis=1)
 
             # Convert a numpy array to a pytorch tensor
-            tensor = torch.tensor(data)
+            tensor = torch.from_numpy(data).to(torch.device("cpu"))
 
             # Extract path_ids and unique ones
             path_ids = tensor[:, col_storm_id].long()
