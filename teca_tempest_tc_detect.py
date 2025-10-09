@@ -94,17 +94,18 @@ class DetectNodes(torch.nn.Module):
         """
 
         # get the device to run on
-        np = numpy
-        use_gpu = False
-        if torch.cuda.is_available() and self._device == "gpu":
+        if not torch.cuda.is_available() or str(self._device) == "cpu":
+            np = numpy
+            use_gpu = False
+        else:
             np = cupy
             use_gpu = True
 
         t_lon = torch.as_tensor(self.input_coords()["lon"], device=x.device)
         t_lat = torch.as_tensor(self.input_coords()["lat"], device=x.device)
         if use_gpu:
-            lon = teca_variant_array.New(cupy_asarray(t_lon))
-            lat = teca_variant_array.New(cupy_asarray(t_lat))
+            lon = teca_variant_array.New(cupy.asarray(t_lon))
+            lat = teca_variant_array.New(cupy.asarray(t_lat))
         else:
             lon = teca_variant_array.New(t_lon.cpu().numpy())
             lat = teca_variant_array.New(t_lat.cpu().numpy())
