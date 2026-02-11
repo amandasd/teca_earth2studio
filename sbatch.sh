@@ -33,12 +33,21 @@ conda activate /pscratch/sd/a/asdufek/envs/earth2studio-env-v9
 
 export MPICH_GPU_SUPPORT_ENABLED=0
 
+BASE_SEED=333
+
+i=0
 while read -r IC; do
     echo "Running IC = $IC"
 
+    # Each IC gets a different seed
+    # Unique seed per rank and per batch_id
+    # Within Python code: SEED + rank * 10 + batch_id
+    SEED=$((BASE_SEED + i))
+
     tt=$(date +%s%N)
-    srun -n 4 python run_fcn3.py --initial-condition "$IC"
+    srun -n 4 python run_fcn3.py --initial-condition "$IC" --seed "$SEED"
     echo "total runtime[$IC]: $(echo "scale=3;($(date +%s%N) - ${tt})/(1*10^09)" | bc) seconds"
 
     echo "Finished IC = $IC"
+    i=$((i+1))
 done < input.txt
