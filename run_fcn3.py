@@ -142,8 +142,10 @@ if __name__ == "__main__":
         perturbation = Zero()
         x, coords = perturbation(x, coords)
 
-        # Set random seed per batch
-        prognostic.set_rng(seed + batch_id)
+        # Set random seed
+        # Unique seed per rank and per batch_id
+        seed = seed + rank * 10 + batch_id
+        prognostic.set_rng(seed)
 
         # Create FCN3 iterator
         model = prognostic.create_iterator(x, coords)
