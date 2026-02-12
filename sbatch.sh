@@ -45,7 +45,7 @@ while read -r IC; do
     SEED=$((BASE_SEED + i))
 
     tt=$(date +%s%N)
-    srun -n 4 python run_fcn3.py --initial-condition "$IC" --seed "$SEED"
+    srun -n 4 python run_fcn3.py --initial-condition "$IC" --seed "$SEED" </dev/null
     echo "total runtime[$IC]: $(echo "scale=3;($(date +%s%N) - ${tt})/(1*10^09)" | bc) seconds"
 
     echo "Finished IC = $IC"
