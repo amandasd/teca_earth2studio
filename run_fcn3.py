@@ -5,6 +5,7 @@ from tqdm import tqdm
 
 from datetime import datetime, timedelta
 from earth2studio.data import ARCO
+from earth2studio.data import NCAR_ERA5
 from earth2studio.data import fetch_data, prep_data_array
 from earth2studio.utils.time import to_time_array
 from earth2studio.utils.coords import CoordSystem
@@ -73,9 +74,20 @@ if __name__ == "__main__":
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     # Create the data source
-    data = ARCO()
-    da = data([start_time], ['z'])
+    data = NCAR_ERA5()
+
+    # ARCO surface geopotential
+    arco = ARCO()
+    da = arco([start_time], ['z'])
     z, coords_z = prep_data_array(da, device=device)
+
+    # ERA5 surface geopotential
+    #ds = xr.open_dataset("e5.oper.invariant.128_129_z.ll025sc.1979010100_1979010100.nc")
+    #ds = ds.rename({"Z": "z"})
+    #da = ds["z"]
+    #da = da.expand_dims(dim={"variable": ["z"]})
+    #da = da.transpose("time", "variable", "latitude", "longitude")
+    #z, coords_z = prep_data_array(da, device=device)
 
     # Load the default FCN3 model
     prognostic = FCN3.load_model(FCN3.load_default_package())
@@ -92,13 +104,39 @@ if __name__ == "__main__":
     aew_tracker.detect._device = device
 
     # Load initial model state
-    xx, coords = fetch_data(
-        source=data,
-        time=to_time_array([start_time]),
-        variable=prognostic.input_coords()["variable"],
-        lead_time=prognostic.input_coords()["lead_time"],
-        device="cpu",
-    )
+    if rank == 0:
+        xx, coords = fetch_data(
+            source=data,
+            time=to_time_array([start_time]),
+            variable=prognostic.input_coords()["variable"],
+            lead_time=prognostic.input_coords()["lead_time"],
+            device="cpu",
+        )
+        shape = xx.shape
+        dtype = xx.numpy().dtype
+    else:
+        xx = None
+        coords = None
+        shape = None
+        dtype = None
+        
+    MPI.COMM_WORLD.Barrier()
+
+    # Begin: Broadcast from rank 0
+    #
+    # Metadata
+    shape = comm.bcast(shape, root=0)
+    dtype = comm.bcast(dtype, root=0)
+    coords = comm.bcast(coords, root=0)
+
+    # Allocate tensor on non-root ranks
+    if rank != 0:
+        xx = torch.empty(shape, dtype=torch.from_numpy(np.empty((), dtype=dtype)).dtype)
+
+    # Raw memory
+    comm.Bcast(xx.numpy(), root=0)
+    #
+    # End: Broadcast from rank 0
 
     batch_ids_produce = list(range(0, int(np.ceil(nensemble / batch_size)),))
     # Loop over ensemble batches with a progress bar
