@@ -247,6 +247,7 @@ def main():
     start_total = time.perf_counter()
 
     start_init = time.perf_counter()
+    # Load the default FCN3 model and data source
     prognostic, xx, coords, z, coords_z = model_init(comm, node_comm, local_size, local_rank, device, start_date)
     end_init = time.perf_counter()
     print(f"Elapsed time(fcn3-init[{rank}]): {end_init - start_init:.6f} seconds")
