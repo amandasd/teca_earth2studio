@@ -31,7 +31,7 @@ total=$(date +%s%N)
 
 i=0
 while read -r IC; do
-    echo "Running IC = $IC, $SLURM_PROCID"
+    echo "Running IC = $IC"
 
     # Each IC gets a different seed
     # Unique seed per rank and per batch_id
@@ -39,7 +39,7 @@ while read -r IC; do
     SEED=$((BASE_SEED + i))
 
     tt=$(date +%s%N)
-    srun -n 32 python -m mpi4py run_fcn3_improved.py --initial-condition "$IC" --seed "$SEED" </dev/null
+    srun -n 32 python -m mpi4py run_fcn3.py --initial-condition "$IC" --seed "$SEED" </dev/null
     echo "total runtime[$IC]: $(echo "scale=3;($(date +%s%N) - ${tt})/(1*10^09)" | bc) seconds"
 
     echo "Finished IC = $IC"
