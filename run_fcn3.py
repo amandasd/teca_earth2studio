@@ -9,11 +9,11 @@ The African easterly wave detection algorithm is based on original code by Emily
 Usage:
     python run_fcn3.py --initial-condition INITIAL_CONDITION --nsteps NSTEPS --seed SEED --out_path OUT_PATH
 
-Arguments:
-    INITIAL_CONDITION: Initial condition date in YYYY-MM-DD format (e.g., "2024-01-01")
-    NSTEPS: Number of forecast steps
-    SEED: Seed for each MPI process
-    OUT_PATH: Directory where output files will be written
+Parameters:
+    --initial-condition INITIAL_CONDITION: Initial condition date in YYYY-MM-DD format (e.g., "2024-01-01")
+    --nsteps NSTEPS: Number of forecast steps (default: 60)
+    --seed SEED: Seed for each MPI process (default: 333)
+    --out_path OUT_PATH: Directory where output files will be written
 """
 import argparse
 import os
