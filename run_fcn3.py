@@ -77,15 +77,19 @@ def model_init(comm, node_comm, local_size, local_rank, device, start_date):
     """Load the default FCN3 model and data source."""
     print(f"Loading FCN3 model...")
 
-    package = FCN3.load_default_package()
+    if rank == 0:
+        package = FCN3.load_default_package()
+    comm.Barrier()
+
     # Serialize only inside node
     for r in range(local_size):
        if local_rank == r:
+          package = FCN3.load_default_package()
           prognostic = FCN3.load_model(package).to(device)
        # Synchronize within node
        node_comm.Barrier()
 
-    if local_rank == 0:
+    if rank == 0:
         print(f"Rank 0 loading initial model state...")
         # Create the data source
         data = NCAR_ERA5()
@@ -134,7 +138,7 @@ def model_init(comm, node_comm, local_size, local_rank, device, start_date):
     coords_z = comm.bcast(coords_z, root=0)
 
     # Allocate tensor on non-root ranks
-    if local_rank != 0:
+    if rank != 0:
         xx = torch.empty(shape, dtype=torch.from_numpy(np.empty((), dtype=dtype)).dtype)
         zz = torch.empty(shape_z, dtype=torch.from_numpy(np.empty((), dtype=dtype_z)).dtype)
 
