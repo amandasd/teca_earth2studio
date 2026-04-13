@@ -336,14 +336,21 @@ def main():
                 if step == nsteps:
                     break
 
+        # Move tensors to CPU
+        tc_local_tensor = tc_tensor.detach().cpu()
+        tc_local_coords = tc_coords
+
+        aew_local_tensor = aew_tensor.detach().cpu()
+        aew_local_coords = aew_coords
+
         # Begin: Post-process tracks
         #
         # Stitch TC detections
         tc_tracker.stitch._nsteps = nsteps+1
-        tc_tracks_tensor, tc_track_coords = tc_tracker.stitch(tc_tensor, tc_coords)
+        tc_tracks_tensor, tc_track_coords = tc_tracker.stitch(tc_local_tensor, tc_local_coords)
 
         # Filter AEW detections
-        aew_tracks_tensor, aew_track_coords = aew_tracker.filter(aew_tensor, aew_coords)
+        aew_tracks_tensor, aew_track_coords = aew_tracker.filter(aew_local_tensor, aew_local_coords)
         #
         # End: Post-process tracks
 
@@ -355,16 +362,9 @@ def main():
         start_write = time.perf_counter()
         # Begin: Gather results across MPI ranks
         #
-        # Move tensors to CPU
-        tc_local_tensor = tc_tracks_tensor.detach().cpu()
-        tc_local_coords = tc_track_coords
-
-        aew_local_tensor = aew_tracks_tensor.detach().cpu()
-        aew_local_coords = aew_track_coords
-
         # Collect results on rank 0
-        tc_gathered = comm.gather((tc_local_tensor, tc_local_coords), root=0)
-        aew_gathered = comm.gather((aew_local_tensor, aew_local_coords), root=0)
+        tc_gathered = comm.gather((tc_tracks_tensor, tc_track_coords), root=0)
+        aew_gathered = comm.gather((aew_tracks_tensor, aew_track_coords), root=0)
         #
         # End: Gather results across MPI ranks
 
