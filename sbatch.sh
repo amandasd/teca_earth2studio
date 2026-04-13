@@ -18,7 +18,7 @@ module load cray-hdf5-parallel
 module load cray-netcdf-hdf5parallel
 
 export EARTH2STUDIO_PACKAGE_TIMEOUT=2000
-export EARTH2STUDIO_CACHE=$(mktemp -d /pscratch/sd/a/asdufek/earth2studio_cache/tmpXXXXXX)
+export EARTH2STUDIO_CACHE=/pscratch/sd/a/asdufek/earth2studio_cache
 
 export PYTHONPATH=/pscratch/sd/a/asdufek/test/03202026/teca/install/lib:$PYTHONPATH
 export LD_LIBRARY_PATH=/pscratch/sd/a/asdufek/test/03202026/teca/install/lib:/pscratch/sd/a/asdufek/test/03202026/teca/install/lib64:/pscratch/sd/a/asdufek/en
