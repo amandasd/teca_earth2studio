@@ -173,6 +173,7 @@ class Detecting(torch.nn.Module):
         mesh.set_calendar("gregorian")
         mesh.set_whole_extent(wext)
         mesh.set_extent(wext)
+        mesh.set_periodic_in_x(1)
 
         q_md = teca_metadata()
         FLOAT32 = 10
